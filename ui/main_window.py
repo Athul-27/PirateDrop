@@ -66,20 +66,14 @@ class PirateDropUI(QMainWindow):
         if os.path.isfile(icon_path):
             icon_label.setPixmap(QIcon(icon_path).pixmap(48, 48))
         icon_label.setFixedWidth(48)
-        layout.addWidget(icon_label)
-
-        layout.addStretch(1)
 
         title = QLabel(APP_TITLE)
         title.setObjectName("headerTitle")
-        title.setAlignment(Qt.AlignCenter)
-        layout.addWidget(title)
 
         layout.addStretch(1)
-
-        spacer = QLabel()
-        spacer.setFixedWidth(48)
-        layout.addWidget(spacer)
+        layout.addWidget(icon_label)
+        layout.addWidget(title)
+        layout.addStretch(1)
         return header
 
     def build_navigation(self):
