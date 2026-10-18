@@ -1,0 +1,4 @@
+# PirateDrop runtime + build dependencies
+PySide6>=6.6
+pytest>=8.0
+pyinstaller>=6.0
