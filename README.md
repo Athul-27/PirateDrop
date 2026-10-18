@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/icon_source.png" width="96" alt="PirateDrop icon" />
+  <img src="assets/icon.ico" width="96" alt="PirateDrop icon" />
 </p>
 
 <h1 align="center">PirateDrop</h1>
