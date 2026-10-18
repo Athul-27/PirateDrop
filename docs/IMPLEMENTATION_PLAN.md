@@ -12,7 +12,7 @@ A lightweight desktop application that wraps the croc CLI with a polished black-
 - croc CLI v11.5.4 (Windows executable, bundled with app)
 - PyInstaller for Windows packaging
 - pytest for testing
-- QProcess for asynchronous process management
+- subprocess.Popen + daemon reader thread for asynchronous process management
 
 4. Screens
 ---------
@@ -27,14 +27,14 @@ Only states supported by actual CLI output or confirmed process events.
 
 6. Process Management
 ---------------------
-- QProcess for all croc subprocess management
-- Separate stdout and stderr streams
+- subprocess.Popen + daemon reader thread for all croc subprocess management
+- Merged stdout/stderr stream (stderr=STDOUT), parsed line-by-line
 - Continuous streaming, pipe deadlock prevention
 - Terminal control sequences stripped before parsing
 - Detect process-start errors, unexpected termination
 - Graceful cancellation + bounded forced termination
 - No orphaned processes; cleanup on shutdown
-- Prevent concurrent transfers (single transfer at a time)
+- Send and Receive screens each hold an independent service instance; a send and a receive may run concurrently
 
 7. Visual Design -- Neo-Brutalism
 ---------------------------------
@@ -89,7 +89,7 @@ Reusable components:
 -------------------------
 - Preserve croc encryption/authentication
 - Never implement custom encryption
-- Do not store share codes unnecessarily
+- Share codes and links are stored in the local transfer history by design (capped at 200 entries in %APPDATA%\PirateDrop\history.json)
 - Do not expose secrets in logs
 - Do not silently overwrite files
 - Validate paths and executable locations
@@ -135,6 +135,9 @@ Do not claim real transfers were tested if they were not.
 - Windows-only
 13. Build & Run Commands
 ------------------------
+- Install dependencies: pip install -r requirements.txt
 - Run development: python app.py
-- Build packaged app: pyinstaller --onefile --windowed --add-data croc/croc.exe;.\ app.py
-- Run bundled app: dist/app.exe
+- Build packaged app: .\build.ps1 (PyInstaller via app.spec)
+- Run bundled app: dist\PirateDrop.exe
+- Run tests: python -m pytest
+- Run integration tests (network required): python -m pytest --run-integration

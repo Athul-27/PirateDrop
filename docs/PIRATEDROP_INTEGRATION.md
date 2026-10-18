@@ -15,8 +15,8 @@ Output: share code on completion
 
 3. Receive Command Syntax
 -------------------------
-croc receive -c [code]
-Validation: missing code detected
+croc --yes --out [destination] [code]
+Validation: missing code detected before process start
 
 4. Progress Output Format
 -------------------------
@@ -26,8 +26,8 @@ No fabricated percentages or ETA
 
 5. Process Management
 ---------------------
-- QProcess for async management
-- Separate stdout/stderr streams
+- subprocess.Popen + daemon reader thread for async management
+- Merged stdout/stderr stream (stderr=STDOUT), parsed line-by-line
 - Continuous streaming
 - Pipe deadlock prevention
 - Start error detection
@@ -38,7 +38,7 @@ No fabricated percentages or ETA
 6. Conflict Handling
 --------------------
 croc prompts for conflict resolution
-Safest option: skip/rename user selection via --options
+PirateDrop passes --yes, so conflicts are auto-accepted (overwrite)
 
 7. Environment Variables
 ------------------------
