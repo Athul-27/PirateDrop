@@ -1,3 +1,5 @@
+import os
+
 from PySide6.QtWidgets import (
     QMainWindow,
     QWidget,
@@ -9,21 +11,22 @@ from PySide6.QtWidgets import (
     QFrame,
 )
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 
 from ui.send_screen import SendScreen
 from ui.receive_screen import ReceiveScreen
 from ui.settings_screen import SettingsScreen
 from ui.history_screen import HistoryScreen
+from services.config import bundled_dir
 
 APP_TITLE = "PirateDrop"
-APP_SUBTITLE = "Send  /  Receive  /  Done"
 
 
 class PirateDropUI(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(APP_TITLE)
-        self.setFixedSize(820, 640)
+        self.setFixedSize(900, 760)
         self.init_ui()
 
     def init_ui(self):
@@ -53,17 +56,30 @@ class PirateDropUI(QMainWindow):
     def build_header(self):
         header = QFrame()
         header.setObjectName("header")
-        layout = QVBoxLayout(header)
-        layout.setContentsMargins(24, 16, 24, 16)
-        layout.setSpacing(4)
+        layout = QHBoxLayout(header)
+        layout.setContentsMargins(24, 12, 24, 12)
+        layout.setSpacing(12)
+
+        icon_label = QLabel()
+        icon_label.setObjectName("headerIcon")
+        icon_path = os.path.join(bundled_dir(), "assets", "icon.ico")
+        if os.path.isfile(icon_path):
+            icon_label.setPixmap(QIcon(icon_path).pixmap(32, 32))
+        icon_label.setFixedWidth(32)
+        layout.addWidget(icon_label)
+
+        layout.addStretch(1)
 
         title = QLabel(APP_TITLE)
         title.setObjectName("headerTitle")
-        subtitle = QLabel(APP_SUBTITLE)
-        subtitle.setObjectName("headerSubtitle")
-
+        title.setAlignment(Qt.AlignCenter)
         layout.addWidget(title)
-        layout.addWidget(subtitle)
+
+        layout.addStretch(1)
+
+        spacer = QLabel()
+        spacer.setFixedWidth(32)
+        layout.addWidget(spacer)
         return header
 
     def build_navigation(self):

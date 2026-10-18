@@ -70,28 +70,12 @@ class SendScreen(QWidget):
         self.clear_btn.clicked.connect(self.clear_all)
         file_layout.addWidget(self.file_btn)
         file_layout.addWidget(self.folder_btn)
-        file_layout.addStretch()
-        file_layout.addWidget(self.remove_btn)
-        file_layout.addWidget(self.clear_btn)
-        layout.addLayout(file_layout)
-
-        list_label = QLabel("Files to send  (drag & drop supported):")
-        list_label.setObjectName("sectionLabel")
-        layout.addWidget(list_label)
-        self.file_list = QListWidget()
-        self.file_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.file_list.setMinimumHeight(130)
-        layout.addWidget(self.file_list)
-
-        QShortcut(QKeySequence(Qt.Key_Delete), self.file_list, activated=self.remove_selected)
-
-        # Mode controls
-        mode_layout = QHBoxLayout()
-        mode_layout.addWidget(QLabel("Mode:"))
+        file_layout.addSpacing(12)
+        file_layout.addWidget(QLabel("Mode:"))
         self.mode_combo = QComboBox()
         self.mode_combo.addItems(["Direct", "Stored"])
         self.mode_combo.currentIndexChanged.connect(self.on_mode_changed)
-        mode_layout.addWidget(self.mode_combo)
+        file_layout.addWidget(self.mode_combo)
 
         self.exp_label = QLabel("Expires:")
         self.exp_combo = QComboBox()
@@ -103,9 +87,21 @@ class SendScreen(QWidget):
         self.dl_spin.setValue(int(self.config.get("store_downloads") or 1))
         self.store_widgets = [self.exp_label, self.exp_combo, self.dl_label, self.dl_spin]
         for widget in self.store_widgets:
-            mode_layout.addWidget(widget)
-        mode_layout.addStretch()
-        layout.addLayout(mode_layout)
+            file_layout.addWidget(widget)
+        file_layout.addStretch()
+        file_layout.addWidget(self.remove_btn)
+        file_layout.addWidget(self.clear_btn)
+        layout.addLayout(file_layout)
+
+        list_label = QLabel("Files to send  (drag & drop supported):")
+        list_label.setObjectName("sectionLabel")
+        layout.addWidget(list_label)
+        self.file_list = QListWidget()
+        self.file_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.file_list.setMinimumHeight(150)
+        layout.addWidget(self.file_list)
+
+        QShortcut(QKeySequence(Qt.Key_Delete), self.file_list, activated=self.remove_selected)
 
         # Action buttons
         action_layout = QHBoxLayout()
@@ -135,6 +131,7 @@ class SendScreen(QWidget):
         self.share_code_display.setObjectName("shareCode")
         self.share_code_display.setReadOnly(True)
         self.copy_btn = QPushButton("Copy Code")
+        self.copy_btn.setFixedSize(120, 36)
         self.copy_btn.clicked.connect(self.copy_share_code)
         share_layout.addWidget(self.share_code_display, 1)
         share_layout.addWidget(self.copy_btn)
@@ -147,6 +144,7 @@ class SendScreen(QWidget):
         self.share_url_display.setReadOnly(True)
         self.share_url_display.setPlaceholderText("A download link will appear here...")
         self.copy_url_btn = QPushButton("Copy URL")
+        self.copy_url_btn.setFixedSize(120, 36)
         self.copy_url_btn.clicked.connect(self.copy_share_url)
         url_layout.addWidget(self.share_url_display, 1)
         url_layout.addWidget(self.copy_url_btn)
@@ -156,6 +154,7 @@ class SendScreen(QWidget):
         queue_header = QHBoxLayout()
         self.queue_label = QLabel("Queue:")
         self.queue_clear_btn = QPushButton("Clear Queue")
+        self.queue_clear_btn.setFixedSize(120, 36)
         self.queue_clear_btn.clicked.connect(self.clear_queue)
         queue_header.addWidget(self.queue_label)
         queue_header.addStretch()

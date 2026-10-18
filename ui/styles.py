@@ -30,11 +30,6 @@ QLabel#headerTitle {
     font-weight: bold;
     letter-spacing: 6px;
 }
-QLabel#headerSubtitle {
-    color: #FFFFFF;
-    font-size: 11px;
-    letter-spacing: 3px;
-}
 
 /* Navigation */
 QFrame#nav {
