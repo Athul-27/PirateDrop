@@ -64,8 +64,8 @@ class PirateDropUI(QMainWindow):
         icon_label.setObjectName("headerIcon")
         icon_path = os.path.join(bundled_dir(), "assets", "icon.ico")
         if os.path.isfile(icon_path):
-            icon_label.setPixmap(QIcon(icon_path).pixmap(32, 32))
-        icon_label.setFixedWidth(32)
+            icon_label.setPixmap(QIcon(icon_path).pixmap(48, 48))
+        icon_label.setFixedWidth(48)
         layout.addWidget(icon_label)
 
         layout.addStretch(1)
@@ -78,7 +78,7 @@ class PirateDropUI(QMainWindow):
         layout.addStretch(1)
 
         spacer = QLabel()
-        spacer.setFixedWidth(32)
+        spacer.setFixedWidth(48)
         layout.addWidget(spacer)
         return header
 
