@@ -11,6 +11,12 @@
 
 ---
 
+## Screenshot
+
+<p align="center">
+  <img src="assets/UI.png" alt="PirateDrop interface" width="720" />
+</p>
+
 ## Features
 
 - **Send files & folders** — pick via dialog or drag & drop, queue multiple transfers
