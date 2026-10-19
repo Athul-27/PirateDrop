@@ -13,6 +13,7 @@ DEFAULTS = {
     "store_expiration": "1d",
     "store_downloads": 1,
     "show_security_notice": True,
+    "window_geometry": "",
 }
 
 

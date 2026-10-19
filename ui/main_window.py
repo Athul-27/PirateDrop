@@ -1,3 +1,4 @@
+import base64
 import os
 
 from PySide6.QtWidgets import (
@@ -17,7 +18,7 @@ from ui.send_screen import SendScreen
 from ui.receive_screen import ReceiveScreen
 from ui.settings_screen import SettingsScreen
 from ui.history_screen import HistoryScreen
-from services.config import bundled_dir
+from services.config import bundled_dir, get_config
 
 APP_TITLE = "PirateDrop"
 
@@ -26,8 +27,10 @@ class PirateDropUI(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(APP_TITLE)
-        self.setFixedSize(900, 760)
+        self.setMinimumSize(820, 680)
+        self.resize(900, 760)
         self.init_ui()
+        self._restore_geometry()
 
     def init_ui(self):
         central = QWidget()
@@ -103,7 +106,21 @@ class PirateDropUI(QMainWindow):
         if self.stacked_widget.currentWidget() is self.history_screen:
             self.history_screen.refresh()
 
+    def _restore_geometry(self):
+        raw = get_config().get("window_geometry")
+        if raw:
+            try:
+                self.restoreGeometry(base64.b64decode(raw))
+            except Exception:
+                pass
+
     def closeEvent(self, event):
+        try:
+            get_config().update(
+                window_geometry=base64.b64encode(bytes(self.saveGeometry())).decode()
+            )
+        except Exception:
+            pass
         for screen in (self.send_screen, self.receive_screen):
             try:
                 screen.pirate_service.cancel()

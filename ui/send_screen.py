@@ -1,3 +1,6 @@
+import os
+import re
+
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -14,7 +17,7 @@ from PySide6.QtWidgets import (
     QProgressBar,
     QApplication,
 )
-from PySide6.QtCore import Qt, Signal, QObject, QTimer
+from PySide6.QtCore import Qt, Signal, QObject, QTimer, QEvent
 from PySide6.QtGui import QShortcut, QKeySequence
 
 from services.pirate_service import PirateService
@@ -22,8 +25,31 @@ from services.config import get_config, resolve_croc_path
 from services.progress import parse_progress, format_stats
 from services.history import get_history
 from ui import dialogs
+from ui.sparkline import SpeedSparkline
 
 STORE_EXPIRATIONS = ["30m", "90m", "12h", "1d", "3d", "1w", "2w"]
+
+_SPEED_RE = re.compile(r"([0-9]*\.?[0-9]+)\s*([KMGT]?B)/s", re.IGNORECASE)
+_SPEED_FACTORS = {"B": 1.0 / 1048576, "KB": 1.0 / 1024, "MB": 1.0, "GB": 1024.0, "TB": 1048576.0}
+
+
+def format_size(num_bytes):
+    size = float(num_bytes)
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if size < 1024.0 or unit == "TB":
+            return f"{int(size)} B" if unit == "B" else f"{size:.1f} {unit}"
+        size /= 1024.0
+    return f"{size:.1f} TB"
+
+
+def parse_speed_mb_s(text):
+    if not text:
+        return None
+    match = _SPEED_RE.search(text)
+    if not match:
+        return None
+    value = float(match.group(1))
+    return value * _SPEED_FACTORS.get(match.group(2).upper(), 1.0)
 
 
 class _SendSignals(QObject):
@@ -101,6 +127,19 @@ class SendScreen(QWidget):
         self.file_list.setMinimumHeight(150)
         layout.addWidget(self.file_list)
 
+        self.list_hint = QLabel("Drop files here or click Select Files")
+        self.list_hint.setParent(self.file_list)
+        self.list_hint.setAlignment(Qt.AlignCenter)
+        self.list_hint.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.list_hint.setStyleSheet(
+            "color: #000000; background-color: transparent; border: none; font-size: 12px;"
+        )
+        self.file_list.installEventFilter(self)
+
+        self.size_summary_label = QLabel("")
+        self.size_summary_label.setObjectName("statsLabel")
+        layout.addWidget(self.size_summary_label)
+
         QShortcut(QKeySequence(Qt.Key_Delete), self.file_list, activated=self.remove_selected)
 
         # Action buttons
@@ -123,6 +162,10 @@ class SendScreen(QWidget):
         self.stats_label = QLabel("")
         self.stats_label.setObjectName("statsLabel")
         layout.addWidget(self.stats_label)
+
+        self.speed_sparkline = SpeedSparkline()
+        self.speed_sparkline.setVisible(False)
+        layout.addWidget(self.speed_sparkline)
 
         # Share code / URL
         share_layout = QHBoxLayout()
@@ -180,6 +223,39 @@ class SendScreen(QWidget):
 
         self.on_mode_changed(0)
         self.refresh_queue()
+        self._refresh_file_summary()
+
+    def eventFilter(self, obj, event):
+        if obj is self.file_list and event.type() == QEvent.Resize:
+            self.list_hint.setGeometry(self.file_list.rect())
+        return super().eventFilter(obj, event)
+
+    def _refresh_file_summary(self):
+        paths = self._existing_paths()
+        self.list_hint.setGeometry(self.file_list.rect())
+        self.list_hint.setVisible(not paths)
+        if not paths:
+            self.size_summary_label.setText("")
+            return
+        total = sum(self._path_size(path) for path in paths)
+        noun = "file" if len(paths) == 1 else "files"
+        self.size_summary_label.setText(f"{len(paths)} {noun}  •  {format_size(total)}")
+
+    @staticmethod
+    def _path_size(path):
+        if os.path.isfile(path):
+            try:
+                return os.path.getsize(path)
+            except OSError:
+                return 0
+        total = 0
+        for root, _dirs, files in os.walk(path):
+            for name in files:
+                try:
+                    total += os.path.getsize(os.path.join(root, name))
+                except OSError:
+                    pass
+        return total
 
     # ---- helpers ------------------------------------------------------
     def _store_selected(self):
@@ -218,6 +294,7 @@ class SendScreen(QWidget):
             if path and path not in existing:
                 self.file_list.addItem(path)
                 existing.add(path)
+        self._refresh_file_summary()
 
     def select_files(self):
         files, _ = QFileDialog.getOpenFileNames(self, "Select Files to Send")
@@ -232,9 +309,11 @@ class SendScreen(QWidget):
     def remove_selected(self):
         for item in self.file_list.selectedItems():
             self.file_list.takeItem(self.file_list.row(item))
+        self._refresh_file_summary()
 
     def clear_all(self):
         self.file_list.clear()
+        self._refresh_file_summary()
         self.status_label.setText("Ready")
 
     def clear_queue(self):
@@ -300,6 +379,8 @@ class SendScreen(QWidget):
         self.progress_bar.setVisible(True)
         self.progress_bar.setRange(0, 0)
         self.stats_label.setText("")
+        self.speed_sparkline.clear_data()
+        self.speed_sparkline.setVisible(True)
         self._set_busy(True)
         self.refresh_queue()
         self.status_label.setText("Preparing...")
@@ -337,6 +418,7 @@ class SendScreen(QWidget):
         else:
             self._set_busy(False)
             self.progress_bar.setVisible(False)
+            self.speed_sparkline.setVisible(False)
             self.refresh_queue()
 
     # ---- callbacks ----------------------------------------------------
@@ -351,6 +433,10 @@ class SendScreen(QWidget):
     def on_progress_update(self, message):
         parsed = parse_progress(message)
         if parsed:
+            if "speed" in parsed:
+                speed = parse_speed_mb_s(parsed["speed"])
+                if speed is not None:
+                    self.speed_sparkline.add_sample(speed)
             if "percent" in parsed:
                 self.progress_bar.setRange(0, 100)
                 self.progress_bar.setValue(parsed["percent"])
@@ -382,6 +468,7 @@ class SendScreen(QWidget):
         self.status_label.setText("Transfer cancelled.")
         self.progress_bar.setVisible(False)
         self.stats_label.setText("")
+        self.speed_sparkline.setVisible(False)
         self._set_busy(False)
         self.refresh_queue()
 

@@ -1,4 +1,5 @@
 import base64
+import os
 import re
 
 from PySide6.QtWidgets import (
@@ -92,9 +93,13 @@ class ReceiveScreen(QWidget):
         self.cancel_btn.setVisible(False)
         self.reset_btn = QPushButton("Reset")
         self.reset_btn.clicked.connect(self.reset_all)
+        self.open_folder_btn = QPushButton("Open Folder")
+        self.open_folder_btn.clicked.connect(self.open_destination)
+        self.open_folder_btn.setVisible(False)
         action_layout.addWidget(self.receive_btn, 1)
         action_layout.addWidget(self.cancel_btn)
         action_layout.addWidget(self.reset_btn)
+        action_layout.addWidget(self.open_folder_btn)
         layout.addLayout(action_layout)
 
         self.progress_bar = QProgressBar()
@@ -112,7 +117,7 @@ class ReceiveScreen(QWidget):
 
     # ---- helpers ------------------------------------------------------
     def _set_busy(self, busy):
-        for widget in (self.receive_btn, self.paste_btn, self.browse_btn, self.reset_btn):
+        for widget in (self.receive_btn, self.paste_btn, self.browse_btn, self.reset_btn, self.open_folder_btn):
             widget.setEnabled(not busy)
         self.code_input.setEnabled(not busy)
         self.dest_input.setEnabled(not busy)
@@ -166,6 +171,7 @@ class ReceiveScreen(QWidget):
             return
 
         self._set_busy(True)
+        self.open_folder_btn.setVisible(False)
         self.status_label.setText("Connecting...")
         self.progress_bar.setVisible(True)
         self.progress_bar.setRange(0, 0)
@@ -192,11 +198,17 @@ class ReceiveScreen(QWidget):
                 return
         self.status_label.setText(message)
 
+    def open_destination(self):
+        destination = self.dest_input.text().strip()
+        if destination and os.path.isdir(destination):
+            os.startfile(destination)
+
     def on_receive_complete(self):
         self.status_label.setText("Transfer completed successfully!")
         self.progress_bar.setVisible(False)
         self.stats_label.setText("")
         self._set_busy(False)
+        self.open_folder_btn.setVisible(True)
         self.history.add(
             direction="receive",
             items=[self.dest_input.text().strip().split("\\")[-1] or "files"],
@@ -210,6 +222,7 @@ class ReceiveScreen(QWidget):
         self.progress_bar.setVisible(False)
         self.stats_label.setText("")
         self._set_busy(False)
+        self.open_folder_btn.setVisible(False)
         dialogs.show_error(self, error, "Transfer Error")
 
     def cancel_receive(self):
@@ -218,6 +231,7 @@ class ReceiveScreen(QWidget):
         self.progress_bar.setVisible(False)
         self.stats_label.setText("")
         self._set_busy(False)
+        self.open_folder_btn.setVisible(False)
 
     def reset_all(self):
         self.pirate_service.cancel()
@@ -229,6 +243,7 @@ class ReceiveScreen(QWidget):
         self.progress_bar.setValue(0)
         self.stats_label.setText("")
         self._set_busy(False)
+        self.open_folder_btn.setVisible(False)
 
     def closeEvent(self, event):
         self.pirate_service.cancel()
